@@ -1,0 +1,14 @@
+# Data
+*.wav
+*.flac
+*.mp3
+data/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.env
+
+# VS Code
+.vscode/
