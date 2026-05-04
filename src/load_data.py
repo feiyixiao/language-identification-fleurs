@@ -17,7 +17,7 @@ def load_fleurs_subset():
     subsets = {}
     for lang in LANGUAGES:
         print(f"Loading {lang}...")
-        ds = load_dataset("google/fleurs", lang, split="train")
+        ds = load_dataset("google/fleurs", lang, split="train", trust_remote_code=True)
         ds = ds.shuffle(seed=42).select(range(SAMPLES_PER_LANG))
         subsets[lang] = ds
         print(f"  {lang}: {len(ds)} samples loaded")
