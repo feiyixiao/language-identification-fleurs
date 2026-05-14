@@ -1,14 +1,36 @@
-# Data
+# Data / audio
 *.wav
 *.flac
 *.mp3
 data/
 
+# Model artifacts
+*.pt
+*.pth
+*.bin
+*.safetensors
+wav2vec2-fleurs-lid/
+logs/
+
 # Python
 __pycache__/
 *.pyc
+*.pyc
+*.pyo
 venv/
 .env
+*.egg-info/
+dist/
+build/
+
+# HuggingFace cache
+~/.cache/huggingface/
 
 # VS Code
 .vscode/
+
+# macOS
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
