@@ -36,7 +36,7 @@ test_ds = concatenate_datasets(parts)
 
 # ── Load model ────────────────────────────────────────────────────────────────
 print(f"\nLoading model from {CHECKPOINT}...")
-extractor = Wav2Vec2FeatureExtractor.from_pretrained(CHECKPOINT)
+extractor = Wav2Vec2FeatureExtractor.from_pretrained("facebook/wav2vec2-base")
 model     = Wav2Vec2ForSequenceClassification.from_pretrained(CHECKPOINT)
 model.eval()
 
@@ -78,6 +78,7 @@ print(f"Test Macro-F1 : {f1:.4f}")
 
 # ── Confusion matrix ──────────────────────────────────────────────────────────
 cm = confusion_matrix(all_labels, all_preds)
+np.save("../results/confusion_matrix_wav2vec2.npy", cm)
 
 plt.figure(figsize=(10, 8))
 sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
