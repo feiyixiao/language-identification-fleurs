@@ -1,0 +1,5 @@
+Method: MFCC + MLP
+Val Accuracy: 0.1589
+Val Macro-F1: 0.1437
+Test Accuracy: 0.1685
+Test Macro-F1: 0.1571

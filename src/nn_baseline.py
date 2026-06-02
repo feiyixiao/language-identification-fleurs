@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import torch
 import torch.nn as nn
@@ -6,8 +7,9 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
+from datasets import load_dataset
 
-from load_data import load_fleurs_subset
+from load_data import load_fleurs_subset, LANGUAGES
 from extract_mfcc import extract_mfcc
 
 N_MFCC      = 13
@@ -174,3 +176,41 @@ if __name__ == "__main__":
         "mlp_lid.pt",
     )
     print("Saved mlp_lid.pt")
+
+    # ── Evaluate on official FLEURS val and test splits ───────────────────
+    print("\n=== Evaluating on FLEURS validation and test splits ===")
+
+    def eval_fleurs_split(split_name):
+        X_s, y_s_str = [], []
+        for lang in LANGUAGES:
+            ds = load_dataset("google/fleurs", lang, split=split_name, trust_remote_code=True)
+            print(f"  {lang} [{split_name}]: {len(ds)} samples")
+            for sample in ds:
+                mfcc = extract_mfcc(
+                    sample["audio"]["array"],
+                    sample["audio"]["sampling_rate"],
+                    n_mfcc=N_MFCC,
+                )
+                X_s.append(mfcc)
+                y_s_str.append(lang)
+        X_s = np.array(X_s, dtype=np.float32)
+        y_s = le.transform(y_s_str)
+        X_s = (X_s - mean) / std
+        loader = make_loader(X_s, y_s)
+        acc, f1, _, _ = evaluate(model, loader)
+        return acc, f1
+
+    fleurs_val_acc,  fleurs_val_f1  = eval_fleurs_split("validation")
+    fleurs_test_acc, fleurs_test_f1 = eval_fleurs_split("test")
+
+    print(f"\nFLEURS Val  — accuracy: {fleurs_val_acc:.4f} | macro-F1: {fleurs_val_f1:.4f}")
+    print(f"FLEURS Test — accuracy: {fleurs_test_acc:.4f} | macro-F1: {fleurs_test_f1:.4f}")
+
+    os.makedirs("../results", exist_ok=True)
+    with open("../results/results_baseline.txt", "w") as f:
+        f.write("Method: MFCC + MLP\n")
+        f.write(f"Val Accuracy: {fleurs_val_acc:.4f}\n")
+        f.write(f"Val Macro-F1: {fleurs_val_f1:.4f}\n")
+        f.write(f"Test Accuracy: {fleurs_test_acc:.4f}\n")
+        f.write(f"Test Macro-F1: {fleurs_test_f1:.4f}\n")
+    print("Saved results/results_baseline.txt")

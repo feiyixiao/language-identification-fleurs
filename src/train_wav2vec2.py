@@ -169,7 +169,7 @@ if __name__ == "__main__":
         compute_metrics=compute_metrics,
     )
 
-    trainer.train()
+    trainer.train(resume_from_checkpoint=True)
 
     # 5. Evaluate on test set
     print("\n=== Test set evaluation ===")
