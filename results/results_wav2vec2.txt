@@ -1,0 +1,9 @@
+Method: Wav2Vec2ForSequenceClassification (fine-tuned)
+Languages: cmn_hans_cn, ja_jp, en_us, de_de, es_419, it_it, ar_eg, sw_ke
+Val Accuracy: 0.8290
+Val Macro-F1: 0.8271
+Test Accuracy: 0.8327
+Test Macro-F1: 0.8292
+Epochs: 10
+Learning rate: 3e-5
+Batch size: 8

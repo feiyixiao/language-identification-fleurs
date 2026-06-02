@@ -1,11 +1,11 @@
-# Core ML
-torch>=2.0.0
-torchaudio>=2.0.0
-numpy>=1.24.0
+# Core ML — torch 2.5.x required (transformers 5.x needs ≥2.6)
+torch==2.5.1
+torchaudio==2.5.1
+numpy<2  # datasets 2.x is not compatible with numpy 2.x
 
-# HuggingFace stack
-transformers>=4.40.0
-datasets>=2.18.0
+# HuggingFace stack (pinned for torch 2.5.1 compatibility)
+transformers==4.44.2
+datasets==2.20.0
 evaluate>=0.4.0
 accelerate>=0.27.0
 huggingface_hub>=0.22.0
@@ -17,6 +17,6 @@ scikit-learn>=1.3.0
 matplotlib>=3.7.0
 seaborn>=0.12.0
 
-# Audio (needed by datasets Audio feature)
+# Audio decoding (soundfile used as backend; torchcodec NOT supported with torch 2.5.x)
 soundfile>=0.12.0
 librosa>=0.10.0
