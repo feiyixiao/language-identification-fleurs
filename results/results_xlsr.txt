@@ -1,0 +1,9 @@
+Method: XLS-R (wav2vec2-large-xlsr-53, fine-tuned)
+Languages: cmn_hans_cn, ja_jp, en_us, de_de, es_419, it_it, ar_eg, sw_ke
+Val Accuracy: 0.8655
+Val Macro-F1: 0.8253
+Test Accuracy: 0.8724
+Test Macro-F1: 0.8415
+Epochs: 10
+Learning rate: 1e-5
+Batch size: 8
