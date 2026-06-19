@@ -1,0 +1,10 @@
+Method: XLS-R (wav2vec2-large-xlsr-53, fine-tuned, full train split)
+Languages: cmn_hans_cn, ja_jp, en_us, de_de, es_419, it_it, ar_eg, sw_ke
+Val Accuracy: 0.8929
+Val Macro-F1: 0.8631
+Test Accuracy: 0.8904
+Test Macro-F1: 0.8659
+Epochs: 10
+Learning rate: 1e-5
+Batch size: 8
+Train samples per language: full official split (~2700-2800)

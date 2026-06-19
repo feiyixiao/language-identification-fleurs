@@ -1,0 +1,5 @@
+Method: Whisper-base (zero-shot language detection, no fine-tuning)
+Languages: cmn_hans_cn, ja_jp, en_us, de_de, es_419, it_it, ar_eg, sw_ke
+Test Accuracy: 0.9914
+Test Macro-F1: 0.9887
+N per language (test): full
