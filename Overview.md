@@ -107,7 +107,7 @@ wav2vec2-base confusion matrix:
 - Poster presentation: July 14, in person
 - Final written report: July 28, 23:59 (ILIAS, 4-page Interspeech format)
 
-## Notes for Claude Code
+## Additional Notes
 - Always activate the teamlab conda environment before running scripts
 - Run scripts from the src/ directory
 - Data is cached in ~/.cache/huggingface/ — no need to re-download

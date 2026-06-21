@@ -1,26 +1,3 @@
-"""
-lang2vec_analysis.py — Typological Distance vs Model Confusion Analysis
-========================================================================
-This script implements the advanced direction from our proposal:
-"Analyze confusions against typological distance (lang2vec, language family)"
-
-The core question: do languages that are typologically closer get confused
-more often by our classifier? If yes, that suggests the model is picking up
-on genuine linguistic features. If no, the confusions are driven by something
-else (e.g. acoustic recording conditions, speaker characteristics).
-
-Prerequisites:
-    - Run svc.py first to generate results/confusion_matrix.npy
-    - pip install lang2vec
-
-Usage:
-    cd src
-    python lang2vec_analysis.py
-
-Outputs:
-    - Printed correlation statistics
-    - Figures saved to ../figures/
-"""
 
 import os
 import numpy as np
@@ -30,9 +7,6 @@ import seaborn as sns
 from scipy.stats import spearmanr
 from scipy.spatial.distance import cosine
 
-# ── Language metadata ────────────────────────────────────────────────────────
-# lang2vec uses ISO 639-3 codes, not HuggingFace codes
-# Reference: https://lang2vec.readthedocs.io/
 LANGUAGES = [
     "cmn_hans_cn",  # Mandarin
     "ja_jp",        # Japanese
@@ -44,8 +18,6 @@ LANGUAGES = [
     "sw_ke",        # Swahili
 ]
 
-# Mapping from HuggingFace codes to ISO 639-3 codes that lang2vec understands
-# lang2vec uses WALS/URIEL feature databases which require ISO 639-3
 HF_TO_ISO = {
     "cmn_hans_cn": "cmn",  # Mandarin Chinese
     "ja_jp":       "jpn",  # Japanese
@@ -73,16 +45,8 @@ RESULTS_DIR = os.path.join(os.path.dirname(__file__), "..", "results")
 os.makedirs(FIGURES_DIR, exist_ok=True)
 
 
-# ── 1. Load confusion matrix ─────────────────────────────────────────────────
 def load_confusion_matrix():
-    """
-    Load the confusion matrix saved by svc.py.
-    
-    The confusion matrix is an 8x8 array where cm[i][j] is the number of
-    times language i was predicted as language j. The diagonal is correct
-    predictions, off-diagonal are errors.
-    """
-    path = os.path.join(RESULTS_DIR, "confusion_matrix.npy")
+    path = os.path.join(RESULTS_DIR, "confusion_matrix_wav2vec2.npy")
     if not os.path.exists(path):
         raise FileNotFoundError(
             "confusion_matrix.npy not found. Run svc.py first!"
@@ -94,16 +58,6 @@ def load_confusion_matrix():
 
 # ── 2. Compute confusion rates ───────────────────────────────────────────────
 def compute_confusion_rates(cm):
-    """
-    Convert raw confusion counts to symmetric confusion rates.
-    
-    Why symmetric? Typological distance is symmetric (distance from English
-    to German == distance from German to English), so we need to match that.
-    We average confusion in both directions: rate(i,j) = (cm[i,j] + cm[j,i]) / 2
-    
-    We also normalize by the total samples per language so that languages
-    with more test samples don't dominate.
-    """
     n = cm.shape[0]
     # Normalize each row by total samples for that language
     row_sums = cm.sum(axis=1, keepdims=True)
@@ -121,24 +75,6 @@ def compute_confusion_rates(cm):
 
 # ── 3. Compute typological distances ─────────────────────────────────────────
 def compute_typological_distances():
-    """
-    Use lang2vec to compute pairwise typological distances between languages.
-    
-    lang2vec encodes languages as feature vectors from URIEL, a typological
-    database covering phonology, syntax, morphology, and geography.
-    We use the 'syntax_knn' feature set which captures syntactic typology
-    and tends to correlate well with language family structure.
-    
-    Other feature sets you could try:
-    - 'phonology_knn': phonological features (more relevant for LID!)
-    - 'geo': geographic proximity
-    - 'fam': language family one-hot encoding
-    - 'learned': learned embeddings
-    
-    Cosine distance between feature vectors = typological distance.
-    Distance of 0 = identical typological profile.
-    Distance of 1 = maximally different.
-    """
     iso_codes = [HF_TO_ISO[lang] for lang in LANGUAGES]
     
     print("\nFetching lang2vec features...")
@@ -156,29 +92,9 @@ def compute_typological_distances():
 
     return distances
 
-
-# ── 4. Correlation analysis ──────────────────────────────────────────────────
+# correl between typological distance and the confusion matrix results
 def correlate(confusion_rates, distances):
-    """
-    Compute Spearman correlation between typological distance and confusion rate.
-    
-    Why Spearman (not Pearson)?
-    - We care about rank correlation, not linear correlation
-    - Typological distances are not normally distributed
-    - Spearman is more robust to outliers
-    
-    Hypothesis: higher typological distance → lower confusion rate
-    So we expect a NEGATIVE correlation.
-    
-    If rho is significantly negative: the model confuses typologically
-    similar languages more, suggesting it captures real linguistic structure.
-    
-    If rho is near zero or positive: confusions are driven by other factors
-    (recording conditions, speaker variation, acoustic overlap unrelated
-    to typology).
-    """
     n = len(LANGUAGES)
-    # Extract upper triangle only (avoid counting pairs twice)
     dist_vals = []
     conf_vals = []
     pair_labels = []
@@ -203,24 +119,21 @@ def correlate(confusion_rates, distances):
     print(f"  p-value = {pval:.4f}")
     if pval < 0.05:
         if rho < 0:
-            print("  ✓ Significant NEGATIVE correlation:")
-            print("    Typologically closer languages are confused more often.")
-            print("    The model captures some real linguistic structure!")
+            print("Significant NEGATIVE correlation:")
+            print("Typologically closer languages are confused more often.")
+            print("The model captures some real linguistic structure!")
         else:
-            print("  ✓ Significant POSITIVE correlation:")
-            print("    Typologically distant languages are confused more often.")
-            print("    This is unexpected — worth investigating why.")
+            print("Significant POSITIVE correlation:")
+            print("Typologically distant languages are confused more often.")
+            print("This is unexpected — worth investigating why.")
     else:
-        print("  ✗ No significant correlation found (p > 0.05).")
-        print("    Confusions may be driven by factors other than typology")
-        print("    (e.g. recording conditions, speaker variation).")
+        print("No significant correlation found (p > 0.05).")
+        print("Confusions may be driven by factors other than typology")
+        print("(e.g. recording conditions, speaker variation).")
 
     return dist_vals, conf_vals, pair_labels, rho, pval
 
-
-# ── 5. Visualizations ────────────────────────────────────────────────────────
 def plot_typological_distance_matrix(distances):
-    """Heatmap of pairwise typological distances."""
     names = [LANGUAGE_NAMES[l] for l in LANGUAGES]
     plt.figure(figsize=(9, 7))
     sns.heatmap(distances, annot=True, fmt=".2f",
@@ -234,7 +147,6 @@ def plot_typological_distance_matrix(distances):
 
 
 def plot_confusion_rates(confusion_rates):
-    """Heatmap of symmetric confusion rates."""
     names = [LANGUAGE_NAMES[l] for l in LANGUAGES]
     plt.figure(figsize=(9, 7))
     sns.heatmap(confusion_rates, annot=True, fmt=".3f",
@@ -248,10 +160,7 @@ def plot_confusion_rates(confusion_rates):
 
 
 def plot_scatter(dist_vals, conf_vals, pair_labels, rho, pval):
-    """
-    Scatter plot: typological distance (x) vs confusion rate (y).
-    Each point is a language pair. This is the key figure for the paper.
-    """
+ 
     plt.figure(figsize=(10, 7))
     plt.scatter(dist_vals, conf_vals, alpha=0.6, s=60)
 
@@ -282,7 +191,6 @@ def plot_scatter(dist_vals, conf_vals, pair_labels, rho, pval):
 
 
 def print_top_confusions(confusion_rates, distances, n=10):
-    """Print the most confused language pairs with their typological distances."""
     pairs = []
     n_langs = len(LANGUAGES)
     for i in range(n_langs):
@@ -304,29 +212,23 @@ def print_top_confusions(confusion_rates, distances, n=10):
         print(f"{lang1}–{lang2:<20} {conf:>10.4f} {dist:>10.4f}")
 
 
-# ── Main ─────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     print("Lang2Vec Typological Distance Analysis")
     print("="*60)
 
-    # Load confusion matrix from svc.py results
     cm = load_confusion_matrix()
 
-    # Compute symmetric confusion rates
     confusion_rates = compute_confusion_rates(cm)
 
-    # Compute typological distances
     distances = compute_typological_distances()
 
-    # Print top confusions
     print_top_confusions(confusion_rates, distances)
 
-    # Correlation analysis
     dist_vals, conf_vals, pair_labels, rho, pval = correlate(
         confusion_rates, distances
     )
 
-    # Visualizations
+    #vis
     print("\nGenerating figures...")
     plot_typological_distance_matrix(distances)
     plot_confusion_rates(confusion_rates)
@@ -335,3 +237,6 @@ if __name__ == "__main__":
     print("\n" + "="*60)
     print("Analysis complete! Check figures/ for plots.")
     print("="*60)
+
+    # truncate clips to different lengths
+    # language family analysis

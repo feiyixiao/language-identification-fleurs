@@ -5,6 +5,10 @@ from sklearn.preprocessing import StandardScaler
 from load_data import load_fleurs_subset
 from extract_mfcc import extract_mfcc
 from datasets import load_dataset
+import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix
+import os
+import seaborn as sns
 
 LANGUAGES = [
     "cmn_hans_cn",  # Mandarin
@@ -94,3 +98,17 @@ if __name__ == "__main__":
     print(f"Test Accuracy:       {test_acc:.4f}")
     print("\nClassification Report (Test):")
     print(classification_report(y_test, y_test_pred))
+
+    # ── 8. Save confusion matrix ────────────────────────────────────────────────
+    cm = confusion_matrix(y_test, y_test_pred, labels=LANGUAGES)
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(cm, annot=True, fmt="d", xticklabels=LANGUAGES, yticklabels=LANGUAGES, cmap="Blues")
+    plt.title("Confusion Matrix (Official Test Split)")
+    plt.ylabel("True")
+    plt.xlabel("Predicted")
+    plt.tight_layout()
+    os.makedirs("../results", exist_ok=True)
+    np.save("../results/confusion_matrix.npy", cm)
+    plt.savefig("../results/svc_confusion_matrix.png")
+    print("Saved confusion matrix to results/")
+    plt.close()
