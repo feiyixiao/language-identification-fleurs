@@ -1,0 +1,17 @@
+{
+  "condition": "plain",
+  "augmented": false,
+  "num_epochs": 10,
+  "languages": [
+    "Mandarin",
+    "Japanese",
+    "English",
+    "German",
+    "Spanish",
+    "Italian",
+    "Arabic",
+    "Swahili"
+  ],
+  "num_langs": 8,
+  "model_ckpt": "facebook/wav2vec2-large-xlsr-53"
+}
