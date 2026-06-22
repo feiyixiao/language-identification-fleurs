@@ -1,0 +1,18 @@
+{
+  "model_name": "wav2vec2",
+  "checkpoint": "./wav2vec2-fleurs-lid/checkpoint-4000",
+  "n_transformer_layers": 12,
+  "n_total_layers": 13,
+  "hidden_dim": 768,
+  "n_samples": 5792,
+  "label_names": [
+    "Mandarin",
+    "Japanese",
+    "English",
+    "German",
+    "Spanish",
+    "Italian",
+    "Arabic",
+    "Swahili"
+  ]
+}

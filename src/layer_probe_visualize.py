@@ -83,7 +83,7 @@ def train_probes(features, labels, n_folds=5):
             X_val   = scaler.transform(X_val)
 
             clf = LogisticRegression(max_iter=1000, C=1.0, solver="lbfgs",
-                                     multi_class="multinomial", n_jobs=-1)
+                                     n_jobs=-1)
             clf.fit(X_train, y_train)
 
             preds = clf.predict(X_val)

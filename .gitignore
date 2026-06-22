@@ -34,3 +34,7 @@ build/
 
 # Jupyter
 .ipynb_checkpoints/
+
+# Large raw layer-probe feature caches (regenerate from cluster, keep only meta.json)
+results/layer_probes/*_layer_features.npy
+results/layer_probes/*_labels.npy
