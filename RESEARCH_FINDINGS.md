@@ -158,4 +158,25 @@ wav2vec2-base misclassifies 192 Italian clips as Arabic with 0 errors in the rev
 
 ## Direction 5: Confusion Matrix Evolution Across Training Epochs
 
-*(Planned)*
+**Scripts:** `src/epoch_tracking_train.py` (run on HPC cluster), `src/epoch_tracking_visualize.py` (run locally)  
+**Status:** "plain" condition complete and validated. "augmented" condition had a bug — needs re-run.
+
+### Bug found and fixed (2026-06-29)
+
+The first cluster run revealed a preprocessing bug: `epoch_tracking_train.py` applied the same augmented preprocessing function to train, validation, *and* test sets. This meant the "augmented" condition's test-set evaluations were corrupted by the same noise/time-masking/speed-perturbation used during training — explaining an anomalous Italian→Arabic error spike and lower-than-expected accuracy in that condition. The original `train_xlsr_augmented.py` correctly keeps val/test deterministic; the epoch-tracking script has been fixed to match (train uses `set_transform` with dynamic per-epoch augmentation; val/test use static, never-augmented preprocessing). Fix pushed to GitHub — **Fei needs to re-run only `--condition augmented`.**
+
+### Results — "plain" condition (validated, matches known XLS-R behavior)
+
+- Overall test accuracy reaches ~88-90% by epoch 2 and stays stable — consistent with the known xlsr/xlsr_fulldata benchmarks.
+- **Japanese recall collapses by epoch 1** and stays low (0.2-0.4) for the remainder of training — the collapse is not a late-training drift, it appears almost immediately and persists.
+- Italian→Arabic errors stay low throughout (consistent with Direction 4's finding that this asymmetry is a wav2vec2-specific, not XLS-R, phenomenon).
+
+### Takeaways (preliminary — "plain" condition only)
+
+1. **The Japanese collapse happens early, not gradually.** By the end of epoch 1, Japanese recall is already at its long-run low value. This suggests the model finds the Japanese≈Spanish shortcut almost immediately rather than drifting into it slowly — consistent with the model gravitating quickly toward the easiest separating feature (vowel quality) and then not being dislodged from it by further training.
+
+2. Full comparison against the augmented condition is pending the cluster re-run.
+
+### Implications for the Paper
+
+> "The Japanese recall collapse is established within the first training epoch and persists essentially unchanged through epoch 10, suggesting XLS-R converges quickly onto a shortcut feature (likely vowel quality) rather than gradually drifting into it. This is consistent with the broader pattern of shortcut learning: once the model finds an easy separating cue, subsequent training does not self-correct without an external intervention such as augmentation."

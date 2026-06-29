@@ -113,19 +113,39 @@ def load_split(split: str, max_per_lang=None):
 feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained(MODEL_CKPT)
 
 
-def make_preprocess(use_augmentation: bool):
-    def preprocess(example):
-        arr = np.array(example["audio"]["array"], dtype=np.float32)
-        if len(arr) > MAX_SAMPLES:
-            arr = arr[:MAX_SAMPLES]
-        elif len(arr) < MAX_SAMPLES:
-            arr = np.pad(arr, (0, MAX_SAMPLES - len(arr)))
-        if use_augmentation:
-            arr = augment(arr)
-        inputs = feature_extractor(arr, sampling_rate=SAMPLING_RATE,
-                                   return_tensors="np", padding=False)
-        return {"input_values": inputs.input_values[0], "label": example["label"]}
-    return preprocess
+def preprocess(example):
+    """Static, deterministic preprocessing for val/test — no augmentation,
+    regardless of condition. Keeps evaluation comparable across conditions
+    and consistent with train_xlsr_augmented.py."""
+    arr = np.array(example["audio"]["array"], dtype=np.float32)
+    if len(arr) > MAX_SAMPLES:
+        arr = arr[:MAX_SAMPLES]
+    elif len(arr) < MAX_SAMPLES:
+        arr = np.pad(arr, (0, MAX_SAMPLES - len(arr)))
+    inputs = feature_extractor(arr, sampling_rate=SAMPLING_RATE,
+                               return_tensors="np", padding=False)
+    return {"input_values": inputs.input_values[0], "label": example["label"]}
+
+
+def make_train_transform(use_augmentation: bool):
+    """Dynamic transform for train — re-applied fresh every epoch via
+    set_transform, so augmentation differs each pass instead of being
+    baked in once via .map()."""
+    def train_transform(batch):
+        out_values = []
+        for arr in batch["audio"]:
+            a = np.array(arr["array"], dtype=np.float32)
+            if len(a) > MAX_SAMPLES:
+                a = a[:MAX_SAMPLES]
+            elif len(a) < MAX_SAMPLES:
+                a = np.pad(a, (0, MAX_SAMPLES - len(a)))
+            if use_augmentation:
+                a = augment(a)
+            inputs = feature_extractor(a, sampling_rate=SAMPLING_RATE,
+                                       return_tensors="np", padding=False)
+            out_values.append(inputs.input_values[0])
+        return {"input_values": out_values, "label": batch["label"]}
+    return train_transform
 
 
 # ── Metrics ───────────────────────────────────────────────────────────────────
@@ -198,12 +218,15 @@ def main():
     print(f"  train: {len(train_ds)}, val: {len(val_ds)}, test: {len(test_ds)}")
 
     print("Preprocessing...")
-    preprocess = make_preprocess(use_augmentation=use_aug)
-    train_ds = train_ds.map(preprocess, remove_columns=train_ds.column_names)
-    val_ds   = val_ds.map(preprocess,   remove_columns=val_ds.column_names)
-    test_ds  = test_ds.map(preprocess,  remove_columns=test_ds.column_names)
-    for ds in [train_ds, val_ds, test_ds]:
-        ds.set_format("torch")
+    # train: dynamic augmentation applied fresh every epoch via set_transform
+    # (only perturbs audio when condition == "augmented")
+    train_ds.set_transform(make_train_transform(use_augmentation=use_aug))
+    # val/test: static, deterministic, NEVER augmented — keeps evaluation
+    # comparable between the plain and augmented conditions
+    val_ds  = val_ds.map(preprocess,  remove_columns=val_ds.column_names)
+    test_ds = test_ds.map(preprocess, remove_columns=test_ds.column_names)
+    val_ds.set_format("torch")
+    test_ds.set_format("torch")
 
     print("Loading model...")
     model = Wav2Vec2ForSequenceClassification.from_pretrained(
@@ -233,6 +256,7 @@ def main():
         push_to_hub=False,
         report_to="none",
         dataloader_num_workers=0,
+        remove_unused_columns=False,  # needed: set_transform keeps raw "audio"/"label" columns
     )
 
     trainer = Trainer(
